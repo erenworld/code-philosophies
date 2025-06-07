@@ -1,7 +1,5 @@
 # react-philosophies
 
-Si `react-philosophies` vous a aidé d'une quelconque manière, envisagez de [m'offrir quelques tasses de café ☕☕☕](https://ko-fi.com/minimithi). Cela me motive à créer plus de "trucs" en `React` ! 🙂
-
 ## Table des matières
 
 0. [Introduction](#-0-introduction)  
@@ -102,3 +100,41 @@ En voici quelques-unes :
 10. [Prettier](https://prettier.io/) (ou une alternative) formate votre code automatiquement, assurant une mise en forme cohérente à chaque fois. Vous n’avez plus à y penser !
 11. [`Typescript`](https://www.typescriptlang.org/) et des frameworks comme [`NextJS`](https://nextjs.org/) vous simplifient énormément la vie.
 12. Je recommande vivement [Code Climate](https://codeclimate.com/quality/) (ou un équivalent) pour les dépôts open-source ou si vous avez le budget. Je trouve que les "code smells" détectés automatiquement me motivent vraiment à réduire la dette technique de l’application sur laquelle je travaille !
+
+### 1.2 Le code est une douleur supplémentaire
+
+> "Le meilleur code est celui qu’on n’écrit pas. Chaque ligne de code que vous introduisez volontairement dans le monde est une ligne qui devra être déboguée, lue, comprise et maintenue." - Jeff Atwood
+
+> "L’un de mes jours les plus productifs a été celui où j’ai supprimé 1000 lignes de code." - Eric S. Raymond
+
+Voir aussi : [Write Less Code - Rich Harris](https://svelte.dev/blog/write-less-code), [Code is evil - Artem Sapegin](https://github.com/sapegin/washingcode-book/blob/master/manuscript/Code_is_evil.md)
+
+#### 1.2.1 Réfléchir avant d’ajouter une dépendance
+
+Inutile de rappeler que plus vous ajoutez de dépendances, plus vous envoyez de code au navigateur. Posez-vous la question : utilisez-vous réellement les fonctionnalités qui rendent cette bibliothèque intéressante ?
+
+<details>
+    <summary><strong><em>🙈 En avez-vous vraiment besoin ?</strong> Voir des exemples de dépendances / de code dont vous pourriez vous passer</em></summary>
+
+<br/>
+
+1. Avez-vous vraiment besoin de [`Redux`](https://redux.js.org/) ? C’est possible. Mais gardez en tête que React est déjà une [bibliothèque de gestion d’état](https://kentcdodds.com/blog/application-state-management-with-react).
+
+2. Avez-vous vraiment besoin du [`Apollo client`](https://www.apollographql.com/docs/react/) ? Il offre beaucoup de fonctionnalités puissantes, comme la normalisation manuelle. Mais il augmentera fortement la taille de votre bundle. Si votre application n’utilise pas ses fonctionnalités avancées, envisagez une alternative plus légère comme [`react-query`](https://react-query.tanstack.com/comparison) ou [`SWR`](https://github.com/vercel/swr) (ou aucune).
+
+3. [`Axios`](https://github.com/axios/axios) ? C’est une excellente bibliothèque avec des fonctionnalités difficilement réplicables avec `fetch`. Mais si la seule raison de l’utiliser est une API plus agréable, envisagez un simple wrapper autour de fetch (comme [`redaxios`](https://github.com/developit/redaxios) ou le vôtre). Demandez-vous si vous exploitez vraiment ses fonctionnalités uniques.
+
+4. [`Decimal.js`](https://github.com/MikeMcl/decimal.js/) ? Peut-être que [Big.js](https://github.com/MikeMcl/big.js/) ou [d'autres bibliothèques plus légères](https://www.npmtrends.com/big.js-vs-bignumber.js-vs-decimal.js-vs-mathjs) suffisent.
+
+5. [`Lodash`](https://lodash.com/) / [`UnderscoreJS`](https://underscorejs.org/) ? [you-dont-need/You-Dont-Need-Lodash-Underscore](https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore)
+
+6. [`MomentJS`](https://momentjs.com/) ? [you-dont-need/You-Dont-Need-Momentjs](https://github.com/you-dont-need/You-Dont-Need-Momentjs)
+
+7. Vous n’avez peut-être pas besoin de `Context` pour le thème (`clair`/`sombre`) : envisagez plutôt l’utilisation de [`variables CSS`](https://epicreact.dev/css-variables).
+
+8. Vous n’avez peut-être même pas besoin de `Javascript`. Le CSS est puissant. [you-dont-need/You-Dont-Need-JavaScript](https://github.com/you-dont-need/You-Dont-Need-JavaScript)
+
+<br/>
+
+</details>
+
