@@ -138,3 +138,209 @@ Inutile de rappeler que plus vous ajoutez de dépendances, plus vous envoyez de 
 
 </details>
 
+### 1.2.2 Ne soyez pas trop malin. YAGNI !
+
+« Que pourrait-il arriver à mon logiciel dans le futur ? Oh oui, peut-être ceci ou cela. Autant tout implémenter maintenant tant qu’on travaille sur cette partie. Comme ça, ce sera à l’épreuve du futur. »
+
+**You Aren’t Gonna Need It (YAGNI)** — Vous n’en aurez pas besoin ! Implémentez toujours les choses quand vous en avez *réellement* besoin, jamais juste parce que vous *pensez* en avoir besoin un jour. Moins il y a de code, mieux c’est !  
+(Martin Fowler : YAGNI, C2 Wiki : [You Aren’t Gonna Need It](https://wiki.c2.com/?YouArentGonnaNeedIt))
+
+Section liée : [2.4 Dupliquer coûte bien moins cher qu'une mauvaise abstraction](#24-la-duplication-coûte-moins-cher-quune-mauvaise-abstraction)
+
+### 1.3 Laisse le code dans un meilleur état que tu ne l’as trouvé
+
+**1.3.1 Détecte les "code smells" et agis si nécessaire**
+
+Si tu remarques que quelque chose ne va pas, corrige-le immédiatement. Mais si ce n’est pas si simple à corriger ou si tu n’as pas le temps à ce moment-là, ajoute au minimum un commentaire (`FIXME` ou `TODO`) avec une explication concise du problème identifié. Assure-toi que tout le monde sache que c’est cassé. Cela montre que tu te soucies de la qualité du code, et incite les autres à faire de même lorsqu’ils rencontrent ce genre de choses.
+
+<details>
+    <summary><strong>🙈 Voir des exemples de "code smells" faciles à repérer</strong></summary>
+
+<br/>
+
+- ❌ Méthodes ou fonctions définies avec un grand nombre d’arguments  
+- ❌ Logique booléenne difficile à comprendre  
+- ❌ Trop de lignes de code dans un seul fichier  
+- ❌ Code dupliqué qui est identique (mais potentiellement formaté différemment)  
+- ❌ Fonctions ou méthodes difficiles à comprendre  
+- ❌ Classes / composants avec un trop grand nombre de fonctions ou méthodes  
+- ❌ Trop de lignes de code dans une seule fonction ou méthode  
+- ❌ Fonctions ou méthodes avec un grand nombre de `return`  
+- ❌ Code dupliqué qui n’est pas identique mais suit la même structure (ex. : seuls les noms de variables diffèrent)  
+
+</details>
+
+Garde en tête qu’un *code smell* ne signifie pas forcément que le code doit être changé. Il indique simplement que tu pourrais envisager une meilleure façon d’implémenter la même fonctionnalité.
+
+**1.3.2 Refactoring impitoyable. Mieux vaut simple que complexe.**
+
+> Le code de la pull request est-il plus complexe qu’il ne devrait l’être ? Posez-vous cette question à chaque niveau : les lignes individuelles sont-elles trop complexes ? Les fonctions ? Les classes ?  
+> « Trop complexe » signifie généralement « difficile à comprendre rapidement pour les lecteurs du code ». Cela peut aussi vouloir dire que « les développeurs risquent d’introduire des bugs en appelant ou en modifiant ce code ».  
+> – [Google Engineering Practices: Ce qu’il faut rechercher dans une revue de code](https://google.github.io/eng-practices/review/reviewer/looking-for.html)
+
+**💁‍♀️ ASTUCE : Simplifiez les [conditions complexes](https://github.com/sapegin/washingcode-book/blob/master/manuscript/Avoid_conditions.md) et sortez tôt des fonctions si possible.**
+
+<details>
+    <summary>🙈 Exemple d'utilisation de retours précoces (early returns)</summary>
+
+
+```tsx
+# ❌ MOINS BIEN
+
+if (loading) {
+  return <LoadingScreen />
+} else if (error) {
+  return <ErrorScreen />
+} else if (data) {
+  return <DataScreen />
+} else {
+  throw new Error('This should be impossible')
+}
+
+# ✅ MIEUX
+
+
+if (loading) {
+  return <LoadingScreen />
+} 
+
+if (error) {
+  return <ErrorScreen />
+}
+
+if (data) {
+  return <DataScreen />
+}
+
+throw new Error('This should be impossible')
+```
+
+</details>
+
+**💁‍♀️ ASTUCE : Préférez les fonctions d’ordre supérieur enchaînées aux boucles**
+
+S’il n’y a pas de différence de performance notable et si possible, remplacez les boucles traditionnelles par des fonctions d’ordre supérieur enchaînées (`map`, `filter`, `find`, `findIndex`, `some`, etc).  
+[StackOverflow : Quel est l’avantage d’utiliser une fonction par rapport à une boucle ?](https://stackoverflow.com/questions/34402198/what-is-the-advantage-of-using-a-function-over-loops)
+
+---
+
+### 1.4 Vous pouvez faire mieux
+
+**💁‍♀️ ASTUCE : Rappelez-vous que vous n’avez peut-être pas besoin de mettre votre `state` comme dépendance, car vous pouvez passer une fonction de rappel à la place.**
+
+Vous n’avez pas besoin d’inclure `setState` (de `useState`) ou `dispatch` (de `useReducer`) dans le tableau de dépendances des hooks comme `useEffect` et `useCallback`. ESLint ne se plaindra pas, car React garantit leur stabilité.
+
+<details>
+    <summary>🙈 Voir un exemple</summary>
+
+```tsx
+❌ Moins bien
+const decrement = useCallback(() => setCount(count - 1), [setCount, count])
+const decrement = useCallback(() => setCount(count - 1), [count])
+
+✅ MIEUX
+const decrement = useCallback(() => setCount(count => (count - 1)), [])
+```
+</details>
+
+**💁‍♀️ ASTUCE : Si votre `useMemo` ou `useCallback` n'a pas de dépendance, vous l'utilisez peut-être mal.**
+
+<details>
+    <summary>🙈 Voir l'exemple</summary>
+ 
+ <br />
+ 
+ ```tsx
+ ❌ Pas terrible
+const MyComponent = () => {
+    const functionToCall = useCallback(x: string => `Hello ${x}!`,[])
+    const iAmAConstant = useMemo(() => { return {x: 5, y: 2} }, [])
+    /* Je vais utiliser functionToCall et iAmAConstant */
+}
+        
+✅ MIEUX 
+const I_AM_A_CONSTANT =  { x: 5, y: 2 }
+const functionToCall = (x: string) => `Hello ${x}!`
+const MyComponent = () => {
+    /* Je vais utiliser functionToCall et I_AM_A_CONSTANT */ 
+}
+```
+
+</details>
+
+**💁‍♀️ ASTUCE : Envelopper votre contexte personnalisé dans un hook crée une API plus élégante**
+
+Non seulement c'est plus joli, mais vous n'avez qu'une seule chose à importer au lieu de deux.
+
+<details>
+    <summary>🙈 Voir l'exemple</summary>
+  
+ <br />
+ 
+❌ Pas terrible
+```tsx
+// vous devez importer deux choses à chaque fois
+import { useContext } from "react"
+import { SomethingContext } from "some-context-package"
+
+function App() {
+  const something = useContext(SomethingContext) // ça va, mais pourrait être mieux
+  // blah
+}
+```
+
+✅ Mieux
+```tsx
+// dans un fichier vous déclarez ce hook
+function useSomething() {
+  const context = useContext(SomethingContext)
+  if (context === undefined) {
+    throw new Error('useSomething must be used within a SomethingProvider')
+  }
+  return context
+}
+
+// vous n'avez besoin d'importer qu'une seule chose à chaque fois
+import { useSomething } from "some-context-package"
+
+function App() {
+  const something = useSomething() // plus joli
+  // blah
+}
+```
+
+</details>
+
+**💁‍♀️ ASTUCE : Réfléchissez à la façon dont votre composant sera utilisé avant de le coder**
+
+[Écrire des APIs est difficile](http://sweng.the-davies.net/Home/rustys-api-design-manifesto). Le [`README Driven Development`](https://tom.preston-werner.com/2010/08/23/readme-driven-development.html) est une technique utile pour aider à concevoir de meilleures APIs.
+
+Je ne dis pas qu'on devrait faire du [RDD](https://rathes.me/blog/en/readme-driven-development/) de manière religieuse, je dis juste que l'idée derrière est excellente. Je trouve que quand j'écris d'abord l'API (comment le composant sera utilisé) avant de l'implémenter, cela crée généralement un composant mieux conçu que quand je ne le fais pas.
+
+## 🧘 2. Design pour le bonheur
+
+> "N'importe quel imbécile peut écrire du code que l'ordinateur comprend. Les bons programmeurs écrivent du code que les humains comprennent." – Martin Fowler
+
+> "Le rapport entre le temps passé à lire du code et celui passé à en écrire est largement supérieur à 10 pour 1. Nous passons notre temps à lire du vieux code dans le but d’en écrire du nouveau. Donc si vous voulez aller vite, si vous voulez finir rapidement, si vous voulez que votre code soit facile à écrire, rendez-le facile à lire." ― Robert C. Martin [(Je ne dis pas que je suis d'accord avec ses opinions politiques)](https://www.getrevue.co/profile/tech-bullshit/issues/tech-bullshit-explained-uncle-bob-830918)
+
+**TL;DR**
+
+1. 💖 Évitez la complexité de gestion d’état en supprimant les états redondants  
+2. 💖 Passez la banane, pas le gorille qui tient la banane ni toute la jungle (privilégiez les primitives comme props)  
+3. 💖 Gardez vos composants petits et simples – le principe de responsabilité unique !  
+4. 💖 La duplication coûte bien moins cher que la mauvaise abstraction (évitez les généralisations prématurées/inappropriées)  
+5. Évitez le *prop drilling* en utilisant la composition ([Michael Jackson](https://www.youtube.com/watch?v=3XaXKiXtNjw)). `Context` n’est pas la solution à tous les problèmes de partage d’état  
+6. Divisez les énormes `useEffect` en effets plus petits et indépendants ([KCD : Myths about useEffect](https://epicreact.dev/myths-about-useeffect))  
+7. Extrayez la logique dans des hooks ou des fonctions utilitaires  
+8. Privilégiez des primitives comme dépendances dans `useCallback`, `useMemo` et `useEffect`  
+9. N’ajoutez pas trop de dépendances dans `useCallback`, `useMemo` et `useEffect`  
+10. Pour plus de simplicité, au lieu d’avoir plusieurs `useState`, envisagez `useReducer` si certaines valeurs dépendent d’autres ou d’états précédents  
+11. Le `Context` n’a pas besoin d’être global à toute l’application. Placez-le aussi bas que possible dans l’arbre des composants, comme vous le feriez pour des variables, des commentaires, des états (et du code en général), aussi près que possible de l’endroit où ils sont utilisés.
+
+### 💖 2.1 Évitez la complexité de gestion d’état en supprimant les états redondants
+
+Lorsque vous avez des états redondants, certains peuvent se désynchroniser ; vous pourriez oublier de les mettre à jour après une séquence complexe d’interactions.  
+En plus d’éviter les bugs de synchronisation, vous remarquerez que cela rend le raisonnement plus simple et nécessite moins de code.  
+Voir aussi : [KCD: Don't Sync State. Derive It!](https://kentcdodds.com/blog/dont-sync-state-derive-it), [Tic-Tac-Toe](https://epic-react-exercises.vercel.app/react/hooks/1)
+
+##### 🙈 Exemple 1
