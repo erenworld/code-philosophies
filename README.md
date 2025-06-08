@@ -325,10 +325,10 @@ Je ne dis pas qu'on devrait faire du [RDD](https://rathes.me/blog/en/readme-driv
 
 **TL;DR**
 
-1. 💖 Évitez la complexité de gestion d’état en supprimant les états redondants  
-2. 💖 Passez la banane, pas le gorille qui tient la banane ni toute la jungle (privilégiez les primitives comme props)  
-3. 💖 Gardez vos composants petits et simples – le principe de responsabilité unique !  
-4. 💖 La duplication coûte bien moins cher que la mauvaise abstraction (évitez les généralisations prématurées/inappropriées)  
+1. Évitez la complexité de gestion d’état en supprimant les états redondants  
+2. Passez la banane, pas le gorille qui tient la banane ni toute la jungle (privilégiez les primitives comme props)  
+3. Gardez vos composants petits et simples – le principe de responsabilité unique !  
+4. La duplication coûte bien moins cher que la mauvaise abstraction (évitez les généralisations prématurées/inappropriées)  
 5. Évitez le *prop drilling* en utilisant la composition ([Michael Jackson](https://www.youtube.com/watch?v=3XaXKiXtNjw)). `Context` n’est pas la solution à tous les problèmes de partage d’état  
 6. Divisez les énormes `useEffect` en effets plus petits et indépendants ([KCD : Myths about useEffect](https://epicreact.dev/myths-about-useeffect))  
 7. Extrayez la logique dans des hooks ou des fonctions utilitaires  
@@ -344,3 +344,219 @@ En plus d’éviter les bugs de synchronisation, vous remarquerez que cela rend 
 Voir aussi : [KCD: Don't Sync State. Derive It!](https://kentcdodds.com/blog/dont-sync-state-derive-it), [Tic-Tac-Toe](https://epic-react-exercises.vercel.app/react/hooks/1)
 
 ##### 🙈 Exemple 1
+<details>
+    <summary><strong> 📝🖊️ Voir l'exigence métier / énoncé du problème </strong></summary>
+
+
+---
+
+Votre tâche est d'afficher les propriétés d’un triangle rectangle :
+- les longueurs des trois côtés
+- le périmètre
+- l’aire
+
+Le triangle est un objet avec deux nombres `{a: number, b: number}` qui doivent être récupérés depuis une API.  
+Les deux nombres représentent les deux côtés les plus courts d’un triangle rectangle.
+
+---
+
+</details>
+
+
+<details>
+ <summary> ❌ Voir une solution pas terrible </summary>
+
+```tsx
+const TriangleInfo = () => {
+  const [triangleInfo, setTriangleInfo] = useState<{a: number, b: number} | null>(null)
+  const [hypotenuse, setHypotenuse] = useState<number | null>(null)
+  const [perimeter, setPerimeter] = useState<number | null>(null)
+  const [areas, setArea] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetchTriangle().then(t => setTriangleInfo(t))
+  }, [])
+
+  useEffect(() => {
+    if(!triangleInfo) {
+      return
+    }
+    
+    const { a, b } = triangleInfo
+    const h = computeHypotenuse(a, b)
+    setHypotenuse(h)
+    const newArea = computeArea(a, b)
+    setArea(newArea)
+    const p = computePerimeter(a, b, h)
+    setPerimeter(p)
+
+  }, [triangleInfo])
+
+  if (!triangleInfo) {
+    return null
+  }
+
+  /*** afficher les infos ici ****/
+}
+````
+</details>
+
+
+<details>
+  <summary> ✅ Voir une "meilleure" solution</summary>
+
+```tsx
+const TriangleInfo = () => {
+  const [triangleInfo, setTriangleInfo] = useState<{
+    a: number;
+    b: number;
+  } | null>(null)
+
+  useEffect(() => {
+    fetchTriangle().then((r) => setTriangleInfo(r))
+  }, []);
+
+  if (!triangleInfo) {
+    return
+  }
+
+  const { a, b } = triangeInfo
+  const area = computeArea(a, b)
+  const hypotenuse = computeHypotenuse(a, b)
+  const perimeter = computePerimeter(a, b, hypotenuse)
+ 
+  /*** show info here ****/
+};
+```
+
+</details> 
+
+##### 🙈 Example 2
+<details>
+    <summary><strong> 📝🖊️ Voir l'exigence métier / énoncé du problème </strong></summary>
+
+---
+
+Supposons que vous êtes chargé de concevoir un composant qui :
+
+1. Récupère une liste de points uniques depuis une API  
+2. Inclut un bouton pour trier soit par `x` soit par `y` (ordre croissant)  
+3. Inclut un bouton pour modifier la `maxDistance` (augmenter de `10` à chaque fois, la valeur initiale doit être `100`)  
+4. Affiche uniquement les points qui ne sont PAS plus éloignés que la `maxDistance` actuelle de l’origine `(0, 0)`  
+5. Supposons que la liste ne contient que 100 éléments (vous n’avez donc pas à vous soucier de l’optimisation). Si vous travaillez avec de très grands ensembles de données, vous pouvez mémoriser certains calculs avec `useMemo`.
+
+---
+
+</details>
+
+</details>
+
+<details>
+  <summary> ❌ Voir une solution pas terrible </summary>
+  
+```tsx
+type SortBy = 'x' | 'y'
+const toggle = (current: SortBy): SortBy => current === 'x' ? : 'y' : 'x'
+
+const Points = () => {
+  const [points, setPoints] = useState<{x: number, y: number}[]>([])
+  const [filteredPoints, setFilteredPoints] = useState<{x: number, y: number}[]>([])
+  const [sortedPoints, setSortedPoints] = useState<{x: number, y: number}[]>([])
+  const [maxDistance, setMaxDistance] = useState<number>(100)
+  const [sortBy, setSortBy] = useState<SortBy>('x')
+  
+  useEffect(() => {
+    fetchPoints().then(r => setPoints(r))
+  }, [])
+  
+  useEffect(() => {
+    const sorted = sortPoints(points, sortBy)
+    setSortedPoints(sorted)
+  }, [sortBy, points])
+
+  useEffect(() => {
+    const filtered = sortedPoints.filter(p => getDistance(p.x, p.y) < maxDistance)
+    setFilteredPoints(filtered)
+  }, [sortedPoints, maxDistance])
+
+  const otherSortBy = toggle(sortBy)
+  const pointToDisplay = filteredPoints.map(
+    p => <li key={`${p.x}|{p.y}`}>({p.x}, {p.y})</li>
+  )
+
+  return (
+    <>
+      <button onClick={() => setSortBy(otherSortBy)}>
+        Sort by: {otherSortBy}
+      <button>
+      <button onClick={() => setMaxDistance(maxDistance + 10)}>
+        Increase max distance
+      <button>
+      Showing only points that are less than {maxDistance} units away from origin (0, 0)
+      Currently sorted by: '{sortBy}' (ascending)
+      <ol>{pointToDisplay}</ol>
+    </>
+  )
+}
+
+````
+</details>
+
+<details>
+  <summary> ✅ Voir une "meilleure" solution </summary>
+
+```tsx
+
+// NOTE: You can also use useReducer instead
+type SortBy = 'x' | 'y'
+const toggle = (current: SortBy): SortBy => current === 'x' ? : 'y' : 'x'
+
+const Points = () => {
+  const [points, setPoints] = useState<{x: number, y: number}[]>([])
+  const [maxDistance, setMaxDistance] = useState<number>(100)
+  const [sortBy, setSortBy] = useState<SortBy>('x')
+
+  useEffect(() => {
+    fetchPoints().then(r => setPoints(r))
+  }, [])
+  
+
+  const otherSortBy = toggle(sortBy)
+  const filtedPoints = points.filter(p => getDistance(p.x, p.y) < maxDistance)
+  const pointToDisplay = sortPoints(filteredPoints, sortBy).map(
+    p => <li key={`${p.x}|{p.y}`}>({p.x}, {p.y})</li>
+  )
+
+  return (
+    <>
+      <button onClick={() => setSortBy(otherSortBy)}>
+        Sort by: {otherSortBy} <button>
+      <button onClick={() => setMaxDistance(maxDistance + 10)}>
+        Increase max distance
+      <button>
+      Showing only points that are less than {maxDistance} units away from origin (0, 0)
+      Currently sorted by: '{sortBy}' (ascending)
+      <ol>{pointToDisplay}</ol>
+    </>
+  )
+}
+````
+
+</details>
+
+### 💖 2.2 Passez la banane, pas le gorille qui tient la banane avec toute la jungle
+
+> Vous vouliez une banane, mais ce que vous avez eu, c’est un gorille tenant la banane et toute la jungle. - Joe Armstrong
+
+Pour éviter de tomber dans ce piège, il est conseillé de passer principalement des types primitifs (`boolean`, `string`, `number`, etc.) en tant que props. (Passer des primitifs est aussi recommandé si vous souhaitez utiliser `React.memo` pour l’optimisation)
+
+> Un composant ne devrait connaître que ce qu’il lui faut pour faire son travail, et rien de plus. Autant que possible, les composants devraient pouvoir collaborer avec d’autres sans savoir ce qu’ils sont ni ce qu’ils font.
+
+En procédant ainsi, les composants seront plus faiblement couplés, le degré de dépendance entre deux composants sera réduit. Un couplage faible rend plus facile la modification, le remplacement ou la suppression de composants sans impacter les autres. [stackoverflow:2832017](https://stackoverflow.com/questions/2832017/what-is-the-difference-between-loose-coupling-and-tight-coupling-in-the-object-o)
+
+##### 🙈 Exemple
+
+<details>
+    <summary><strong> 📝🖊️ Voir l'exigence métier / énoncé du problème </strong></summary>
+
+---
